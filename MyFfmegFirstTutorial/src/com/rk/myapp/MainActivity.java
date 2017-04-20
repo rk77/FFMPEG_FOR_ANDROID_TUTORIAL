@@ -17,6 +17,12 @@ public class MainActivity extends Activity
         super.onStart();
         nativeInit();
         nativeSetUri("/mnt/usb/AD0C-15F0/Test/video/20151010_132114.mp4");
+        nativePrepare();
+    }
+
+    public void onStop() {
+        super.onStop();
+        nativeDeinit();
     }
 
     static
@@ -33,4 +39,5 @@ public class MainActivity extends Activity
     private native void nativePause();
     private native void nativePlay();
     private native void nativeSeek(int position);
+    private native void nativeDeinit();
 }

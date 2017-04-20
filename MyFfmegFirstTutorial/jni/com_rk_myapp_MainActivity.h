@@ -129,6 +129,13 @@ JNIEXPORT void JNICALL Java_com_rk_myapp_MainActivity_nativePlay
 JNIEXPORT void JNICALL Java_com_rk_myapp_MainActivity_nativeSeek
   (JNIEnv *, jobject, jint);
 
+/*
+ * Class:     com_rk_myapp_MainActivity
+ * Method:    nativeDeinit
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_com_rk_myapp_MainActivity_nativeDeinit
+  (JNIEnv *, jobject);
 #ifdef __cplusplus
 }
 #endif
