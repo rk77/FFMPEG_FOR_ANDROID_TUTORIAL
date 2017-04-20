@@ -13,6 +13,12 @@ public class MainActivity extends Activity
         setContentView(R.layout.main);
     }
 
+    public void onStart() {
+        super.onStart();
+        nativeInit();
+        nativeSetUri("/mnt/usb/AD0C-15F0/Test/video/20151010_132114.mp4");
+    }
+
     static
     {
         System.loadLibrary("FFMpegJni");
