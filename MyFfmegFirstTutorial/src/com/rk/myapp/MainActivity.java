@@ -2,9 +2,12 @@ package com.rk.myapp;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.graphics.Bitmap;
+import android.util.Log;
 
 public class MainActivity extends Activity
 {
+    private static final String TAG = "FFMpeg_JNI";
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -18,6 +21,13 @@ public class MainActivity extends Activity
         nativeInit();
         nativeSetUri("/mnt/usb/AD0C-15F0/Test/video/20151010_132114.mp4");
         nativePrepare();
+        nativeStart();
+    }
+
+    public void onResume() {
+        super.onResume();
+        Bitmap b = nativeGetFrameBitmap(0);
+        Log.i(TAG, "bitmap is " + b);
     }
 
     public void onStop() {
@@ -33,7 +43,7 @@ public class MainActivity extends Activity
     private native void nativeInit();
     private native void nativeSetSurface();
     private native void nativeSetUri(String uri);
-    private native void nativeGetFrameBitmap(int frame);
+    private native Bitmap nativeGetFrameBitmap(int frame);
     private native void nativePrepare();
     private native void nativeStart();
     private native void nativePause();

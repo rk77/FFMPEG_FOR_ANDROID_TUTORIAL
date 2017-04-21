@@ -6,6 +6,7 @@
 #include <libavutil/log.h>
 
 #include <android/log.h>
+#include <android/bitmap.h>
 
 #define LOG_TAG "FFMpeg_JNI"
 #define LOGI(...) __android_log_print(4, LOG_TAG, __VA_ARGS__);
@@ -23,6 +24,7 @@ AVPacket packet;
 int frameFinished;
 struct SwsContext *sws_ctx;
 char *uri;
+jobject bitmapObj;
 
 void dump_metadata_for_andriod(void *ctx, AVDictionary *m, const char *indent)
 {
@@ -122,6 +124,7 @@ JNIEXPORT void JNICALL Java_com_rk_myapp_MainActivity_nativeInit(JNIEnv *env, jo
     frameFinished = 0;
     sws_ctx = NULL;
     uri = NULL;
+    //bitmapObj = NULL;
     LOGI("nativeInit()"); 
     av_register_all();
 }
@@ -151,8 +154,9 @@ JNIEXPORT void JNICALL Java_com_rk_myapp_MainActivity_nativeSetUri(JNIEnv *env, 
  * Method:    nativeGetFrameBitmap
  * Signature: (I)V
  */
-JNIEXPORT void JNICALL Java_com_rk_myapp_MainActivity_nativeGetFrameBitmap(JNIEnv *env, jobject obj, jint frame)
+JNIEXPORT jobject JNICALL Java_com_rk_myapp_MainActivity_nativeGetFrameBitmap(JNIEnv *env, jobject obj, jint frame)
 {
+    return bitmapObj;
 }
 
 /*
@@ -233,17 +237,51 @@ JNIEXPORT void JNICALL Java_com_rk_myapp_MainActivity_nativePrepare(JNIEnv *env,
     }
 
     // Determine required buffer size and allocate buffer.
-    numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24, pCodecCtx->width, pCodecCtx->height, 1);
+    numBytes = av_image_get_buffer_size(AV_PIX_FMT_ARGB, pCodecCtx->width, pCodecCtx->height, 1);
     buffer = (uint8_t *) av_malloc(numBytes * sizeof(uint8_t));
 
     // Assign appropriate parts of buffer to image planes in pFrameRGB
     //Note that pFrameRGB is an AVFrame, but AVFrame is a superset of AVPicture
     //avpicture_fill((AVPicture *)pFrameRGB, buffer, AV_PIX_FMT_RGB24, pCodecCtx->width, pCodecCtx->height); // Deprecated.
-    av_image_fill_arrays(pFrameRGB->data, pFrameRGB->linesize, buffer, AV_PIX_FMT_RGB24, pCodecCtx->width, pCodecCtx->height, 1);
+    av_image_fill_arrays(pFrameRGB->data, pFrameRGB->linesize, buffer, AV_PIX_FMT_ARGB, pCodecCtx->width, pCodecCtx->height, 1);
 
     // Initialize SWS context for software scaling.
-    sws_ctx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_RGB24, SWS_BILINEAR, NULL, NULL, NULL);
+    sws_ctx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_ARGB, SWS_BILINEAR, NULL, NULL, NULL);
 
+}
+
+void createBitmap_for_android(JNIEnv *env, AVFrame *pFrame, int width, int height)
+{
+    LOGI("createBitmap_for_android(), bitmap width = %d, height = %d", width, height);
+    /*
+    jclass bitmapConfig = (*env)->FindClass(env, "android/graphics/Bitmap$Config");
+    jfieldID argb8888FieldID = (*env)->GetStaticFieldID(env, bitmapConfig, "ARGB_8888", "Landroid/graphics/Bitmap$Config;");
+    jobject argb8888Obj = (*env)->GetStaticObjectField(env, bitmapConfig, argb8888FieldID);
+    */
+
+    
+    jclass bitmapConfig = (*env)->FindClass(env, "android/graphics/Bitmap$Config");
+    jmethodID argbGetValueMethodID = (*env)->GetStaticMethodID(env, bitmapConfig, "valueOf", "(Ljava/lang/String;)Landroid/graphics/Bitmap$Config;");
+    jobject argbObj = (*env)->CallStaticObjectMethod(env, bitmapConfig, argbGetValueMethodID, (*env)->NewStringUTF(env, "ARGB_8888"));
+    
+
+    LOGI("createBitmap_for_android(), test 1");
+    jclass bitmapClass = (*env)->FindClass(env, "android/graphics/Bitmap");
+    LOGI("createBitmap_for_android(), test 11");
+    jmethodID createBitmapMethodID = (*env)->GetStaticMethodID(env, bitmapClass, "createBitmap", "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
+    LOGI("createBitmap_for_android(), test 111");
+    jmethodID copyByteMethodID = (*env)->GetMethodID(env, bitmapClass, "copyPixelsFromBuffer","(Ljava/nio/Buffer;)V");
+    LOGI("createBitmap_for_android(), test 1111");
+    bitmapObj = (*env)->CallStaticObjectMethod(bitmapClass, createBitmapMethodID, width, height, argbObj);
+    /*
+    LOGI("createBitmap_for_android(), test 2");
+    jclass byteBufferClass = (*env)->FindClass(env, "java/nio/ByteBuffer");
+    jmethodID wrapBufferMethodID = (*env)->GetStaticMethodID(env, byteBufferClass, "wrap", "([B)Ljava/nio/ByteBuffer;");
+    jobject byteBufferObj = (*env)->CallStaticObjectMethod(byteBufferClass, wrapBufferMethodID, pFrame->data);
+
+    LOGI("createBitmap_for_android(), test 3");
+    (*env)->CallObjectMethod(env, bitmapObj, copyByteMethodID, byteBufferObj);
+    */
 }
 
 /*
@@ -271,9 +309,10 @@ JNIEXPORT void JNICALL Java_com_rk_myapp_MainActivity_nativeStart(JNIEnv *env, j
                 sws_scale(sws_ctx, (uint8_t const * const *) pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameRGB->data, pFrameRGB->linesize);
 
                 // Save the frame to disk.
-                if (++i <= 0)
+                if (++i <= 1)
                 {
                     //TODO: save the frame.
+                    createBitmap_for_android(env, pFrameRGB, pCodecCtx->width, pCodecCtx->height);
                 }
             }
         }

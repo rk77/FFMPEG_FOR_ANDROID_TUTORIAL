@@ -35,7 +35,7 @@ include $(PREBUILT_SHARED_LIBRARY)
 include $(CLEAR_VARS)  
 LOCAL_MODULE := FFMpegJni 
 LOCAL_SRC_FILES := com_rk_myapp_MainActivity.c
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/include 
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/include
 LOCAL_LDLIBS := -llog -lz
 LOCAL_SHARED_LIBRARIES := avcodec avfilter avformat avutil swresample swscale
 include $(BUILD_SHARED_LIBRARY)
