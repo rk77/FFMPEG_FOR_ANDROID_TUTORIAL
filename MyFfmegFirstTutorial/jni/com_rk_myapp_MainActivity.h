@@ -87,7 +87,7 @@ JNIEXPORT void JNICALL Java_com_rk_myapp_MainActivity_nativeSetUri
  * Signature: (I)V
  */
 JNIEXPORT jobject JNICALL Java_com_rk_myapp_MainActivity_nativeGetFrameBitmap
-  (JNIEnv *, jobject, jint);
+  (JNIEnv *, jobject);
 
 /*
  * Class:     com_rk_myapp_MainActivity

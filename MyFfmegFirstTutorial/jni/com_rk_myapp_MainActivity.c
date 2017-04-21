@@ -154,8 +154,9 @@ JNIEXPORT void JNICALL Java_com_rk_myapp_MainActivity_nativeSetUri(JNIEnv *env, 
  * Method:    nativeGetFrameBitmap
  * Signature: (I)V
  */
-JNIEXPORT jobject JNICALL Java_com_rk_myapp_MainActivity_nativeGetFrameBitmap(JNIEnv *env, jobject obj, jint frame)
+JNIEXPORT jobject JNICALL Java_com_rk_myapp_MainActivity_nativeGetFrameBitmap(JNIEnv *env, jobject obj)
 {
+    LOGI("nativeGetFrameBitmap()");
     return bitmapObj;
 }
 
@@ -258,30 +259,36 @@ void createBitmap_for_android(JNIEnv *env, AVFrame *pFrame, int width, int heigh
     jfieldID argb8888FieldID = (*env)->GetStaticFieldID(env, bitmapConfig, "ARGB_8888", "Landroid/graphics/Bitmap$Config;");
     jobject argb8888Obj = (*env)->GetStaticObjectField(env, bitmapConfig, argb8888FieldID);
     */
-
-    
+    // create bitmap config
+    // NOTE: c++, use the format " env->FindClass("android/graphics/Bitmap$Config") "
+    //       c,   use the format " (*env)->FindClass(env, "android/graphics/Bitmap$Config") "
     jclass bitmapConfig = (*env)->FindClass(env, "android/graphics/Bitmap$Config");
     jmethodID argbGetValueMethodID = (*env)->GetStaticMethodID(env, bitmapConfig, "valueOf", "(Ljava/lang/String;)Landroid/graphics/Bitmap$Config;");
     jobject argbObj = (*env)->CallStaticObjectMethod(env, bitmapConfig, argbGetValueMethodID, (*env)->NewStringUTF(env, "ARGB_8888"));
     
 
-    LOGI("createBitmap_for_android(), test 1");
+    // create bitmap
     jclass bitmapClass = (*env)->FindClass(env, "android/graphics/Bitmap");
-    LOGI("createBitmap_for_android(), test 11");
     jmethodID createBitmapMethodID = (*env)->GetStaticMethodID(env, bitmapClass, "createBitmap", "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
-    LOGI("createBitmap_for_android(), test 111");
     jmethodID copyByteMethodID = (*env)->GetMethodID(env, bitmapClass, "copyPixelsFromBuffer","(Ljava/nio/Buffer;)V");
-    LOGI("createBitmap_for_android(), test 1111");
-    bitmapObj = (*env)->CallStaticObjectMethod(bitmapClass, createBitmapMethodID, width, height, argbObj);
-    /*
+
+    // NOTE: don't leave the "env" arg
+    // Althought there is not compiling error, the code will run error, if leave out the "env" arg.
+    jobject bitmapObjLocal = (*env)->CallStaticObjectMethod(env, bitmapClass, createBitmapMethodID, width, height, argbObj);
+
+    // Note: there use global reference, otherwise we not get the local object in JAVA layer and
+    // there will be a "JNI DETECTED ERROR IN APPLICATION: use of deleted .." error.
+    bitmapObj = (*env)->NewGlobalRef(env, bitmapObjLocal);
+    
     LOGI("createBitmap_for_android(), test 2");
     jclass byteBufferClass = (*env)->FindClass(env, "java/nio/ByteBuffer");
     jmethodID wrapBufferMethodID = (*env)->GetStaticMethodID(env, byteBufferClass, "wrap", "([B)Ljava/nio/ByteBuffer;");
-    jobject byteBufferObj = (*env)->CallStaticObjectMethod(byteBufferClass, wrapBufferMethodID, pFrame->data);
+    jobject byteBufferObj = (*env)->CallStaticObjectMethod(env, byteBufferClass, wrapBufferMethodID, pFrame->data);
 
     LOGI("createBitmap_for_android(), test 3");
     (*env)->CallObjectMethod(env, bitmapObj, copyByteMethodID, byteBufferObj);
-    */
+    
+
 }
 
 /*

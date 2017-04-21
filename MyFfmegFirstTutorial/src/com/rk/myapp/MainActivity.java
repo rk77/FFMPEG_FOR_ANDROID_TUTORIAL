@@ -22,11 +22,12 @@ public class MainActivity extends Activity
         nativeSetUri("/mnt/usb/AD0C-15F0/Test/video/20151010_132114.mp4");
         nativePrepare();
         nativeStart();
+        Log.i(TAG, "onstart end");
     }
 
     public void onResume() {
         super.onResume();
-        Bitmap b = nativeGetFrameBitmap(0);
+        Bitmap b = nativeGetFrameBitmap();
         Log.i(TAG, "bitmap is " + b);
     }
 
@@ -43,7 +44,7 @@ public class MainActivity extends Activity
     private native void nativeInit();
     private native void nativeSetSurface();
     private native void nativeSetUri(String uri);
-    private native Bitmap nativeGetFrameBitmap(int frame);
+    private native Bitmap nativeGetFrameBitmap();
     private native void nativePrepare();
     private native void nativeStart();
     private native void nativePause();
