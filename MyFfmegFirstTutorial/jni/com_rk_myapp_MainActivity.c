@@ -10,6 +10,7 @@
 
 #define LOG_TAG "FFMpeg_JNI"
 #define LOGI(...) __android_log_print(4, LOG_TAG, __VA_ARGS__);
+#define CAST(X) reinterpret_cast(X);
 
 AVFormatContext *pFormatCtx;
 int i, videoStream;
@@ -282,8 +283,12 @@ void createBitmap_for_android(JNIEnv *env, AVFrame *pFrame, int width, int heigh
     
     LOGI("createBitmap_for_android(), test 2");
     jclass byteBufferClass = (*env)->FindClass(env, "java/nio/ByteBuffer");
+    LOGI("createBitmap_for_android(), test 22");
     jmethodID wrapBufferMethodID = (*env)->GetStaticMethodID(env, byteBufferClass, "wrap", "([B)Ljava/nio/ByteBuffer;");
-    jobject byteBufferObj = (*env)->CallStaticObjectMethod(env, byteBufferClass, wrapBufferMethodID, pFrame->data);
+    LOGI("createBitmap_for_android(), test 222");
+    jbyteArray array = (*env)->NewByteArray(env, width * height);
+    (*env)->SetByteArrayRegion(array, 0, width * height, reinterpret_cast<uint8_t*>(pFrame->data[0]));
+    jobject byteBufferObj = (*env)->CallStaticObjectMethod(env, byteBufferClass, wrapBufferMethodID, array);
 
     LOGI("createBitmap_for_android(), test 3");
     (*env)->CallObjectMethod(env, bitmapObj, copyByteMethodID, byteBufferObj);
