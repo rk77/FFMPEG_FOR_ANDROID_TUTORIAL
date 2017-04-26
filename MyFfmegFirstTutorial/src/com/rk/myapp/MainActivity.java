@@ -4,16 +4,22 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.graphics.Bitmap;
 import android.util.Log;
+import android.widget.ImageView;
+
+import com.rk.myapp.R;
 
 public class MainActivity extends Activity
 {
     private static final String TAG = "FFMpeg_JNI";
+
+    private ImageView mImageView;
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+        mImageView = (ImageView) findViewById(R.id.image_frame);
     }
 
     public void onStart() {
@@ -28,7 +34,9 @@ public class MainActivity extends Activity
     public void onResume() {
         super.onResume();
         Bitmap b = nativeGetFrameBitmap();
-        Log.i(TAG, "bitmap is " + b);
+        mImageView.setImageBitmap(b);
+        Log.i(TAG, "onResume(), bitmap is " + b);
+        Log.i(TAG, "onResume(), w = " + b.getWidth() + ", h = " + b.getHeight());
     }
 
     public void onStop() {
