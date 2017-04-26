@@ -25,7 +25,13 @@ public class MainActivity extends Activity
     public void onStart() {
         super.onStart();
         nativeInit();
-        nativeSetUri("/mnt/usb/AD0C-15F0/Test/video/20151010_132114.mp4");
+        /*
+         20151010_132114.mp4
+         2a8s.mkv
+         db.ts
+         shiziwang.rmvb
+         */
+        nativeSetUri("/mnt/usb/AD0C-15F0/Test/video/db.ts");
         nativePrepare();
         nativeStart();
         Log.i(TAG, "onstart end");

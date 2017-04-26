@@ -238,16 +238,16 @@ JNIEXPORT void JNICALL Java_com_rk_myapp_MainActivity_nativePrepare(JNIEnv *env,
     }
 
     // Determine required buffer size and allocate buffer.
-    numBytes = av_image_get_buffer_size(AV_PIX_FMT_ARGB, pCodecCtx->width, pCodecCtx->height, 1);
+    numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGBA, pCodecCtx->width, pCodecCtx->height, 1);
     buffer = (uint8_t *) av_malloc(numBytes * sizeof(uint8_t));
 
     // Assign appropriate parts of buffer to image planes in pFrameRGB
     //Note that pFrameRGB is an AVFrame, but AVFrame is a superset of AVPicture
     //avpicture_fill((AVPicture *)pFrameRGB, buffer, AV_PIX_FMT_RGB24, pCodecCtx->width, pCodecCtx->height); // Deprecated.
-    av_image_fill_arrays(pFrameRGB->data, pFrameRGB->linesize, buffer, AV_PIX_FMT_ARGB, pCodecCtx->width, pCodecCtx->height, 1);
+    av_image_fill_arrays(pFrameRGB->data, pFrameRGB->linesize, buffer, AV_PIX_FMT_RGBA, pCodecCtx->width, pCodecCtx->height, 1);
 
     // Initialize SWS context for software scaling.
-    sws_ctx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_ARGB, SWS_BILINEAR, NULL, NULL, NULL);
+    sws_ctx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_RGBA, SWS_BILINEAR, NULL, NULL, NULL);
 
 }
 
@@ -267,30 +267,37 @@ void createBitmap_for_android(JNIEnv *env, AVFrame *pFrame, int width, int heigh
     jobject argbObj = (*env)->CallStaticObjectMethod(env, bitmapConfig, argbGetValueMethodID, (*env)->NewStringUTF(env, "ARGB_8888"));
     
 
+    LOGI("test 1");
     // create bitmap
     jclass bitmapClass = (*env)->FindClass(env, "android/graphics/Bitmap");
     jmethodID createBitmapMethodID = (*env)->GetStaticMethodID(env, bitmapClass, "createBitmap", "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
     jmethodID copyByteMethodID = (*env)->GetMethodID(env, bitmapClass, "copyPixelsFromBuffer","(Ljava/nio/Buffer;)V");
 
+    LOGI("test 2");
     // NOTE: don't leave the "env" arg
     // Althought there is not compiling error, the code will run error, if leave out the "env" arg.
     jobject bitmapObjLocal = (*env)->CallStaticObjectMethod(env, bitmapClass, createBitmapMethodID, width, height, argbObj);
 
+    LOGI("test 3");
     // Note: there use global reference, otherwise we not get the local object in JAVA layer and
     // there will be a "JNI DETECTED ERROR IN APPLICATION: use of deleted .." error.
     bitmapObj = (*env)->NewGlobalRef(env, bitmapObjLocal);
     
     jclass byteBufferClass = (*env)->FindClass(env, "java/nio/ByteBuffer");
     jmethodID wrapBufferMethodID = (*env)->GetStaticMethodID(env, byteBufferClass, "wrap", "([B)Ljava/nio/ByteBuffer;");
-    //image data to byte arry
+
+    LOGI("test 4");
+    //image data to byte array
     jbyteArray array = (*env)->NewByteArray(env, width * height * 4);
     (*env)->SetByteArrayRegion(env, array, 0, width * height * 4, (jbyte *)(pFrame->data[0]));
 
     jobject byteBufferObj = (*env)->CallStaticObjectMethod(env, byteBufferClass, wrapBufferMethodID, array);
 
+    LOGI("test 5");
     //NOTE: because method "copyPixelsFromBuffer" return void, so call "CallVoidMethod".
     //(*env)->CallObjectMethod(env, bitmapObj, copyByteMethodID, byteBufferObj);
     (*env)->CallVoidMethod(env, bitmapObj, copyByteMethodID, byteBufferObj);
+    LOGI("test 6");
     
 
 }
@@ -305,8 +312,10 @@ JNIEXPORT void JNICALL Java_com_rk_myapp_MainActivity_nativeStart(JNIEnv *env, j
     LOGI("nativeStart()");
     // Read frames and save first five frames to disk.
     i = 0;
+    int frame = 40;
     while (av_read_frame(pFormatCtx, &packet) >= 0)
     {
+        LOGI("test 7");
         // Is this a packet from the video stream?
         if (packet.stream_index == videoStream)
         {
@@ -320,17 +329,25 @@ JNIEXPORT void JNICALL Java_com_rk_myapp_MainActivity_nativeStart(JNIEnv *env, j
                 sws_scale(sws_ctx, (uint8_t const * const *) pFrame->data, pFrame->linesize, 0, pCodecCtx->height, pFrameRGB->data, pFrameRGB->linesize);
 
                 // Save the frame to disk.
-                if (++i <= 1)
+                if (++i == frame)
                 {
                     //TODO: save the frame.
                     createBitmap_for_android(env, pFrameRGB, pCodecCtx->width, pCodecCtx->height);
+                    av_packet_unref(&packet);
+                    break;
+                }
+                else
+                {
+                    frameFinished = 0;
                 }
             }
         }
 
         // Free the packet that was allocated by av_read_frame.
         //av_free_packet(&packet); // Deprecated.
+        LOGI("test 8");
         av_packet_unref(&packet);
+        LOGI("test 9");
     }
 }
 
